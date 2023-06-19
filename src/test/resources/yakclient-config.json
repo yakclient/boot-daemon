@@ -1,0 +1,17 @@
+{
+  "mcVersion": "1.19.2",
+  "mcArgs": ["--version", "1.19.2", "--accessToken", ""],
+  "extensions": [
+    {
+      "descriptor": {
+        "groupId": "net.yakclient.extensions",
+        "artifactId": "example-extension",
+        "version": "1.0-SNAPSHOT"
+      },
+      "repository": {
+        "type": "local",
+        "location": "<LOCAL>"
+      }
+    }
+  ]
+}
