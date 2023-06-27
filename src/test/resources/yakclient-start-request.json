@@ -1,6 +1,11 @@
 {
   "mcVersion": "1.19.2",
-  "mcArgs": ["--version", "1.19.2", "--accessToken", ""],
+  "mcArgs": [
+    "--version",
+    "1.19.2",
+    "--accessToken",
+    ""
+  ],
   "extensions": [
     {
       "descriptor": {
@@ -10,7 +15,7 @@
       },
       "repository": {
         "type": "local",
-        "location": "<LOCAL>"
+        "location": "/Users/durganmcbroom/.m2/repository"
       }
     }
   ]

@@ -1,5 +1,3 @@
-import org.w3c.dom.NodeList
-
 plugins {
     kotlin("jvm") version "1.7.10"
     id("maven-publish")
@@ -32,6 +30,15 @@ tasks.wrapper {
     gradleVersion = "8.1.1"
 }
 
+val jarDependency by configurations.creating
+
+fun DependencyHandlerScope.packInJar(notation: String) {
+    implementation(notation)
+    jarDependency(notation)
+}
+
+val bootConfiguration by configurations.creating
+
 dependencies {
     implementation("com.durganmcbroom:artifact-resolver:1.0-SNAPSHOT") {
         isChanging = true
@@ -48,21 +55,45 @@ dependencies {
         exclude(group = "com.durganmcbroom", module = "artifact-resolver-simple-maven-jvm")
         isChanging = true
     }
+    bootConfiguration("net.yakclient:boot:1.0-SNAPSHOT") {
+        exclude(group = "com.durganmcbroom", module = "artifact-resolver")
+        exclude(group = "com.durganmcbroom", module = "artifact-resolver-simple-maven")
+
+        exclude(group = "com.durganmcbroom", module = "artifact-resolver-jvm")
+        exclude(group = "com.durganmcbroom", module = "artifact-resolver-simple-maven-jvm")
+        isChanging = true
+    }
     implementation("net.yakclient:common-util:1.0-SNAPSHOT") {
         isChanging = true
     }
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.0")
-    implementation("io.ktor:ktor-serialization-jackson:2.3.0")
-    implementation("io.ktor:ktor-server-core-jvm:2.3.0")
-    implementation("io.ktor:ktor-server-netty-jvm:2.3.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-
+    packInJar("io.ktor:ktor-server-content-negotiation:2.3.0")
+    packInJar("io.ktor:ktor-serialization-jackson:2.3.0")
+    packInJar("io.ktor:ktor-server-core-jvm:2.3.0")
+    packInJar("io.ktor:ktor-server-netty-jvm:2.3.0")
+    packInJar("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+//    packInJar("ch.qos.logback:logback-classic:1.4.8")
 
     testImplementation("io.ktor:ktor-server-tests-jvm:2.3.0")
     testImplementation("net.yakclient:boot-test:1.0-SNAPSHOT")
     testImplementation("io.ktor:ktor-client-content-negotiation:2.3.0")
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:2.3.0")
+}
+
+tasks.jar {
+    val dontInclude = bootConfiguration.incoming.resolutionResult.allDependencies.mapTo(HashSet()) {
+        it.requested.displayName.split(":")[1]
+    }
+
+    jarDependency.filterNot { file ->
+        val it = file.name.substring(0, file.name.lastIndexOf('-'))
+
+        dontInclude.contains(it)
+    }.forEach { file ->
+        from(zipTree(file.absoluteFile)) {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        }
+    }
 }
 
 task<Jar>("sourcesJar") {
@@ -82,7 +113,7 @@ publishing {
             artifact(tasks["sourcesJar"])
             artifact(tasks["javadocJar"])
             artifact("${sourceSets.main.get().resources.srcDirs.first().absoluteFile}${File.separator}component-model.json").classifier =
-                "component-model"
+                    "component-model"
 
             artifactId = "boot-daemon"
 

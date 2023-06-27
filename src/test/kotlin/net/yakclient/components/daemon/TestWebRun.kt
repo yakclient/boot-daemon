@@ -83,7 +83,25 @@ class TestWebRun {
         val startResponse =
                 client.put("/start?group=net.yakclient.components&artifact=yak&version=1.0-SNAPSHOT") {
                     contentType(ContentType.Application.Json)
-                    setBody(String(this::class.java.getResourceAsStream("/yakclient-config.json")!!.readInputStream()).replace("<LOCAL>", mavenLocal))
+                    setBody("""
+                        {
+                          "mcVersion": "1.19.2",
+                          "mcArgs": ["--version", "1.19.2", "--accessToken", ""],
+                          "extensions": [
+                            {
+                              "descriptor": {
+                                "groupId": "net.yakclient.extensions",
+                                "artifactId": "example-extension",
+                                "version": "1.0-SNAPSHOT"
+                              },
+                              "repository": {
+                                "type": "local",
+                                "location": "$mavenLocal"
+                              }
+                            }
+                          ]
+                        }
+                    """.trimIndent())
                 }
 
         println(startResponse)

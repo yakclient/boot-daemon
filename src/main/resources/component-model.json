@@ -15,7 +15,6 @@
         }
       }
     },
-
     {
       "request": {
         "descriptor": "net.yakclient:common-util:1.0-SNAPSHOT"
@@ -24,62 +23,6 @@
         "type": "simple-maven",
         "settings": {
           "location": "http://maven.yakclient.net/snapshots"
-        }
-      }
-    },
-    {
-      "request": {
-        "descriptor": "io.ktor:ktor-server-content-negotiation-jvm:2.3.0"
-      },
-      "repository": {
-        "type": "simple-maven",
-        "settings": {
-          "location": "https://repo.maven.apache.org/maven2"
-        }
-      }
-    },
-    {
-      "request": {
-        "descriptor": "io.ktor:ktor-serialization-jackson-jvm:2.3.0"
-      },
-      "repository": {
-        "type": "simple-maven",
-        "settings": {
-          "location": "https://repo.maven.apache.org/maven2"
-        }
-      }
-    },
-    {
-      "request": {
-        "descriptor": "io.ktor:ktor-server-core-jvm:2.3.0"
-      },
-      "repository": {
-        "type": "simple-maven",
-        "settings": {
-          "location": "https://repo.maven.apache.org/maven2"
-        }
-      }
-    },
-    {
-      "request": {
-        "descriptor": "io.ktor:ktor-server-netty-jvm:2.3.0",
-        "excludeArtifacts": "jboss-marshalling"
-      },
-      "repository": {
-        "type": "simple-maven",
-        "settings": {
-          "location": "https://repo.maven.apache.org/maven2"
-        }
-      }
-    },
-    {
-      "request": {
-        "descriptor": "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1"
-      },
-      "repository": {
-        "type": "simple-maven",
-        "settings": {
-          "location": "https://repo.maven.apache.org/maven2"
         }
       }
     }

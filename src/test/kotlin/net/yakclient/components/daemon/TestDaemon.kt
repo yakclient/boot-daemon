@@ -1,10 +1,12 @@
 package net.yakclient.components.daemon
 
 import com.durganmcbroom.artifact.resolver.simple.maven.SimpleMavenRepositorySettings
+import com.durganmcbroom.artifact.resolver.simple.maven.layout.mavenLocal
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.yakclient.boot.component.ComponentConfiguration
 import net.yakclient.boot.component.ComponentInstance
+import net.yakclient.boot.component.artifact.SoftwareComponentArtifactRequest
 import net.yakclient.boot.component.artifact.SoftwareComponentDescriptor
 import net.yakclient.boot.component.context.ContextNodeTypes
 import net.yakclient.boot.test.testBootInstance
@@ -12,6 +14,15 @@ import java.lang.IllegalStateException
 import kotlin.test.Test
 
 class TestDaemon {
+    @Test
+    fun `Daemon start`() {
+        val boot = testBootInstance(mapOf())
+        println(boot.location)
+
+        val daemon = BootDaemon(boot)
+        daemon.start()
+    }
+
     @Test
     fun `Test component runner`() {
         val runner = ComponentRunner()
@@ -51,17 +62,31 @@ class TestDaemon {
 
         val yakDescriptor = SoftwareComponentDescriptor.parseDescription("net.yakclient.components:yak:1.0-SNAPSHOT")!!
         daemon.cache(
-                yakDescriptor,
+                SoftwareComponentArtifactRequest(yakDescriptor),
                 SimpleMavenRepositorySettings.local()
         )
 
         val mapper = ObjectMapper()
-        val resource = mapper.readValue<Map<String, Any>>(this::class.java.getResourceAsStream("/yakclient-config.json")!!)
+        val resource = mapper.readValue<Map<String, Any>>("""
+                        {
+                          "mcVersion": "1.19.2",
+                          "mcArgs": ["--version", "1.19.2", "--accessToken", ""],
+                          "extensions": [
+                            {
+                              "descriptor": {
+                                "groupId": "net.yakclient.extensions",
+                                "artifactId": "example-extension",
+                                "version": "1.0-SNAPSHOT"
+                              },
+                              "repository": {
+                                "type": "local",
+                                "location": "$mavenLocal"
+                              }
+                            }
+                          ]
+                        }
+                    """.trimIndent())
 
         daemon.start(yakDescriptor, ContextNodeTypes.newValueType(resource))
-
-        Thread.sleep(10000)
-
-        daemon.end()
     }
 }

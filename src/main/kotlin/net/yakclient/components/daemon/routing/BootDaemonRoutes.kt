@@ -9,6 +9,8 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.pipeline.*
+import net.yakclient.boot.component.artifact.SoftwareComponentArtifactRequest
 import net.yakclient.boot.component.artifact.SoftwareComponentDescriptor
 import net.yakclient.boot.component.artifact.SoftwareComponentRepositorySettings
 import net.yakclient.boot.component.context.ContextNodeTypes
@@ -17,11 +19,12 @@ import net.yakclient.components.daemon.BootDaemon
 internal fun Application.configureRouting(boot: BootDaemon) {
     routing {
         get("/") {
-            call.respond("Hey, howre you?")
+            call.respond("This is probably a good test that the daemon is running, so... is it?")
         }
 
         post("/cache") {
             val request = call.receive<CacheComponentRequest>()
+            this@configureRouting.log.info("Caching request: '${request.request}' from repository: '${request.repositoryType}@${request.repository}'")
 
             val settings = when (request.repositoryType.lowercase()) {
                 "local" -> SoftwareComponentRepositorySettings.local(
@@ -39,29 +42,58 @@ internal fun Application.configureRouting(boot: BootDaemon) {
 
             val descriptor = SoftwareComponentDescriptor.parseDescription(request.request)
             checkNotNull(descriptor) { "Invalid request: '${request.request}', not properly formatted." }
+            val artifactRequest = runCatching { SoftwareComponentArtifactRequest(descriptor) }
+
             boot.cache(
-                    descriptor, settings
+                    artifactRequest.getOrNull()!!, settings
             )
 
             call.respond(HttpStatusCode.OK)// TODO
         }
 
         put("/start") {
-            val context1 : Map<String, Any> = call.receive()
+            val context1: Map<String, Any> = call.receive()
 
 
-            val descriptor = SoftwareComponentDescriptor(
-                    checkNotNull(call.request.queryParameters["group"]) {"Invalid request, group id of component not specified in query."},
-                    checkNotNull(call.request.queryParameters["artifact"]) {"Invalid request, artfact id of component not specified in query."},
-                    checkNotNull(call.request.queryParameters["version"]) {"Invalid request, version of component not specified in query."},null
+            val descriptor = descriptorFromRequest()
+            this@configureRouting.log.info("Starting component: '$descriptor'")
+
+
+            boot.start(descriptor, ContextNodeTypes.newValueType(context1))
+            call.respond(HttpStatusCode.OK)// TODO
+        }
+        put("/stop") {
+            val descriptor = descriptorFromRequest()
+            this@configureRouting.log.info("Stopping component: '$descriptor'")
+
+            boot.end(descriptor)
+            call.respond(HttpStatusCode.OK)
+        }
+
+        get("/isRunning") {
+            val descriptor = descriptorFromRequest()
+            this@configureRouting.log.info("Checking if component: '$descriptor' is running")
+
+           data class IsRunningResponse(
+                    val group: String,
+                    val artifact: String,
+                    val version:String,
+                    val isRunning: Boolean
             )
 
-
-                boot.start(descriptor, ContextNodeTypes.newValueType(context1))
-            call.respond(HttpStatusCode.OK)// TODO
-
+            call.respond(IsRunningResponse(
+                    descriptor.group,descriptor.artifact,descriptor.version,boot.isRunning(descriptor)
+            ))
         }
     }
+}
+
+private fun PipelineContext<Unit, ApplicationCall>.descriptorFromRequest(): SoftwareComponentDescriptor {
+    return SoftwareComponentDescriptor(
+            checkNotNull(call.request.queryParameters["group"]) { "Invalid request, group id of component not specified in query." },
+            checkNotNull(call.request.queryParameters["artifact"]) { "Invalid request, artfact id of component not specified in query." },
+            checkNotNull(call.request.queryParameters["version"]) { "Invalid request, version of component not specified in query." }, null
+    )
 }
 
 internal fun Application.configureSerialization() {
@@ -72,11 +104,6 @@ internal fun Application.configureSerialization() {
     }
 }
 
-
-internal enum class ComponentRepositoryType {
-    LOCAL,
-    DEFAULT
-}
 
 public data class CacheComponentRequest(
         val repositoryType: String,
